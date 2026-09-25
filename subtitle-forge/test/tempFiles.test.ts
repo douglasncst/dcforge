@@ -1,6 +1,7 @@
 import { describe, expect, it, afterEach } from "vitest";
 import { existsSync, readdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { tmpdir, homedir } from "node:os";
+import { dirname, sep } from "node:path";
 import { cleanupTempDir, createTempDir, tempFilePath } from "../src/util/tempFiles.js";
 
 let dir: string | undefined;
@@ -67,5 +68,19 @@ describe("cleanupTempDir", () => {
     cleanupTempDir(dir);
     expect(() => cleanupTempDir(dir!)).not.toThrow();
     dir = undefined;
+  });
+
+  // Regression coverage for a real bug: a fake test double once returned
+  // "/tmp/fake-audio.wav", and the pipeline's cleanupTempDir(dirname(...))
+  // call tried to recursively delete the entire OS temp directory. It
+  // "worked" (silently) with elevated local permissions and force:true,
+  // and only failed loudly in CI (EACCES on the /tmp mount point itself)
+  // — exactly the kind of failure that must never depend on the caller's
+  // privilege level to catch.
+  it("refuses to remove the OS temp directory, the home directory, or the filesystem root", () => {
+    expect(() => cleanupTempDir(tmpdir())).toThrow(/refusing to remove/);
+    expect(() => cleanupTempDir(homedir())).toThrow(/refusing to remove/);
+    expect(() => cleanupTempDir(sep)).toThrow(/refusing to remove/);
+    expect(existsSync(tmpdir())).toBe(true); // still there
   });
 });

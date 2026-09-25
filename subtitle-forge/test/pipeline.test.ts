@@ -27,7 +27,12 @@ class FakeExtractor implements SubtitleExtractor {
   }
   async extractAudioForTranscription() {
     this.extractedAudio.push("called");
-    return "/tmp/fake-audio.wav";
+    // A real extractor always returns a path inside its own dedicated temp
+    // directory (see util/tempFiles.ts), never a bare OS-tmp-root path —
+    // match that here, since runPipeline calls
+    // cleanupTempDir(dirname(audioPath)) on whatever this returns.
+    const dir = mkdtempSync(join(tmpdir(), "fake-audio-"));
+    return join(dir, "fake-audio.wav");
   }
 }
 
