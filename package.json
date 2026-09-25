@@ -16,14 +16,21 @@
     "claude-console": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
+  ],
+  "keywords": [
+    "cli",
+    "supabase",
+    "typescript"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "typecheck": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -33,9 +40,9 @@
     "@types/node": "^22.10.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^5.0.2"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   }
 }

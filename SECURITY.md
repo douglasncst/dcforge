@@ -19,8 +19,10 @@ or personal data in a report.
   Passwords are sent to Supabase and never stored.
 - The Supabase access and refresh tokens are stored in
   `~/.claude-console/state.json` (or `$CLAUDE_CONSOLE_HOME/state.json`). The
-  directory is created as `0700` and the file is always written atomically
-  as `0600`. These permissions are not enforced on Windows.
+  file is always written atomically as `0600`, and the directory is
+  tightened to `0700` on every save, including one left over from an older
+  version of the CLI or created some other way with looser permissions.
+  These permissions are not enforced on Windows.
 - A state file that cannot be parsed is moved aside to
   `state.json.corrupt-<timestamp>` rather than overwritten. Such a backup may
   still contain tokens: delete it once you no longer need it.

@@ -1,13 +1,13 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { loadState, saveState } from "./local.js";
-import { fail } from "./output.js";
+import { CliError } from "./errors.js";
 
 export function resolveSupabaseConfig(): { url: string; anonKey: string } {
   const state = loadState();
   const url = process.env.SUPABASE_URL ?? state.config.supabase_url;
   const anonKey = process.env.SUPABASE_ANON_KEY ?? state.config.supabase_anon_key;
   if (!url || !anonKey) {
-    fail(
+    throw new CliError(
       "Supabase is not configured. Run `claude-console config set supabase_url <url>` " +
         "and `claude-console config set supabase_anon_key <key>`, or set SUPABASE_URL / " +
         "SUPABASE_ANON_KEY environment variables.",
@@ -42,7 +42,7 @@ export async function getAuthedClient(): Promise<{ client: SupabaseClient; userI
   const client = getSupabaseClient();
   const state = loadState();
   if (!state.session) {
-    fail("not logged in. Run `claude-console auth login <email>`.");
+    throw new CliError("not logged in. Run `claude-console auth login <email>`.");
   }
 
   const { data, error } = await client.auth.setSession({
@@ -50,7 +50,7 @@ export async function getAuthedClient(): Promise<{ client: SupabaseClient; userI
     refresh_token: state.session.refreshToken,
   });
   if (error || !data.session) {
-    fail(
+    throw new CliError(
       `session expired or invalid (${error?.message ?? "no session"}). ` +
         "Run `claude-console auth login` again.",
     );
