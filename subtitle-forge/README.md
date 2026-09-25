@@ -16,6 +16,73 @@ subtitle-forge run movie.mkv --to pt-BR
 > confirm they work before relying on `run`/`transcribe` for anything you
 > care about.
 
+## What it does
+
+Point it at a video (or an existing subtitle file) and it produces a
+translated, timestamp-accurate SRT/VTT — deciding on its own whether it
+needs to transcribe audio or can reuse a subtitle already in the file:
+
+```
+Video/Audio file
+      │
+      ▼
+  Inspect (ffprobe) ── reads streams: video, audio, subtitle languages/codecs
+      │
+      ▼
+  Usable text subtitle already in the file?
+      │
+  ┌───┴────────────────────┐
+  │ yes                    │ no
+  ▼                        ▼
+Extract subtitle      Extract audio ──▶ Transcribe (Whisper, local)
+  │                        │
+  └───────────┬────────────┘
+              ▼
+   Normalized SubtitleDocument  (id, startMs, endMs, text — not SRT itself)
+              │
+              ▼
+   Already the target language? ── yes ──▶ (skip straight to Validate)
+              │ no
+              ▼
+   Translate (Ollama, local, batched)
+              │
+              ▼
+   Validate (errors block export; warnings don't)
+              │
+              ▼
+      SRT or VTT file written next to the input
+```
+
+Quick answers to the questions that matter before you run anything:
+
+- **Extracts vs. transcribes:** `inspect` (via ffprobe) checks whether the
+  file already has a text-based subtitle stream. If yes, `extract` pulls it
+  out (ffmpeg) — no Whisper involved. If no, it extracts audio and hands it
+  to **Whisper** (`transcribe`).
+- **Ollama is used only for translation** — `translate`, and `run` when the
+  source isn't already your target language. It's never involved in
+  transcription or extraction.
+- **What runs locally:** FFmpeg, FFprobe, and Whisper always do — they're
+  local binaries. Ollama is a local *service* by default
+  (`http://127.0.0.1:11434`); see [Local-first design](#local-first-design)
+  for exactly what that does and doesn't guarantee.
+- **Files it generates:** one subtitle file, named `<input>.<lang>.srt` (or
+  `.vtt`) next to the input — e.g. `movie.mkv` → `movie.pt-BR.srt`. It never
+  modifies or overwrites the input, and never overwrites an existing output
+  without `--overwrite`. Temporary audio/subtitle files go through the OS
+  temp directory and are cleaned up automatically.
+- **External dependencies:** FFmpeg/FFprobe, a Whisper backend
+  (`whisper.cpp`) with a model file, and Ollama with a pulled model — none
+  bundled, none auto-installed. See [Requirements](#requirements).
+- **Check what's actually available:** `subtitle-forge doctor` — reports
+  each tool found or missing, right now, on your machine.
+- **First real test:** [on Linux](#linux--macos) or
+  [on Windows](#windows) — both are supported, see
+  [Testing on your machine](#testing-on-your-machine).
+- **What's NOT verified against real tools yet:** see
+  [Manual testing status](#manual-testing-status) — read it before trusting
+  `run`/`transcribe` with anything you care about.
+
 ## Features
 
 - **`inspect`**: container, video/audio/subtitle streams, languages,
@@ -80,30 +147,9 @@ subtitle-forge run movie.mkv --to pt-BR --translator ollama --model llama3.2
 
 ## Pipeline
 
-```
-INPUT
-  ↓
-INSPECT (ffprobe)
-  ↓
-usable text subtitle already in the file?
-  ↓                              ↓
- yes                             no
-  ↓                              ↓
-EXTRACT (ffmpeg)          EXTRACT AUDIO (ffmpeg) → TRANSCRIBE (Whisper)
-  ↓                              ↓
-  └──────────────→ ORIGINAL SUBTITLE (normalized internal model)
-                        ↓
-              already in the target language?
-                        ↓ no
-                   TRANSLATE (Ollama, batched)
-                        ↓
-                   VALIDATE (errors block export; warnings don't)
-                        ↓
-                   WRITE (SRT or VTT)
-```
-
-`run --dry-run` prints this plan (strategy, transcriber, translator, model,
-output path) without running any expensive step.
+See the diagram in [What it does](#what-it-does) above for the full flow.
+`run --dry-run` prints the resolved plan (strategy, transcriber, translator,
+model, output path) without running any expensive step.
 
 ### Architecture
 
@@ -158,8 +204,8 @@ options, on:
 
 - **Installation story.** whisper.cpp ships as a single compiled binary
   with no Python environment to manage — meaningfully simpler to get
-  running on a fresh Windows machine, which is where this will actually be
-  tested first.
+  running consistently across Linux, macOS, and Windows, all of which this
+  project targets as supported platforms.
 - **Structured output.** `--output-json`/`-oj` gives per-segment
   timestamps directly, matching this project's internal model without
   reparsing SRT.
@@ -284,7 +330,11 @@ actually has FFmpeg, a Whisper backend, and Ollama installed — see
 
 ## Testing on your machine
 
-Exact commands, adapt paths for your OS:
+Subtitle Forge targets Linux, macOS, and Windows as supported platforms —
+nothing in the implementation depends on a shell-specific feature (every
+external command runs via `spawn(cmd, argv)`, never a shell; see
+[FFmpeg](#ffmpeg)). Installation is identical everywhere; only the example
+paths below differ.
 
 ```sh
 cd subtitle-forge
@@ -295,7 +345,33 @@ npm link
 subtitle-forge doctor
 ```
 
-**Windows** (PowerShell):
+If `doctor` reports FFmpeg, Whisper, or Ollama as missing, install that
+tool first — `doctor` names exactly what's missing and, for a model,
+what to pull.
+
+### Linux / macOS
+
+```sh
+subtitle-forge inspect /path/to/movie.mkv
+subtitle-forge validate /path/to/subtitle.srt
+subtitle-forge translate /path/to/subtitle.srt --translator ollama --model llama3.2 --to pt-BR
+subtitle-forge run /path/to/movie.mkv --to pt-BR --translator ollama --model llama3.2 --dry-run
+```
+
+Drop `--dry-run` once the plan it prints looks right. With a local Whisper
+model set up:
+
+```sh
+subtitle-forge run /path/to/movie.mkv \
+  --to pt-BR \
+  --transcriber whisper --whisper-model /path/to/ggml-small.bin \
+  --translator ollama --model llama3.2
+```
+
+### Windows
+
+Same commands, PowerShell syntax (Windows paths, `` ` `` for line
+continuation instead of `\`):
 
 ```powershell
 subtitle-forge inspect "C:\Videos\movie.mkv"
@@ -304,22 +380,12 @@ subtitle-forge translate "C:\Subs\movie.srt" --translator ollama --model llama3.
 subtitle-forge run "C:\Videos\movie.mkv" --to pt-BR --translator ollama --model llama3.2 --dry-run
 ```
 
-Drop `--dry-run` once the plan it prints looks right. If a local Whisper
-model is set up:
-
 ```powershell
 subtitle-forge run "C:\Videos\movie.mkv" `
   --to pt-BR `
   --transcriber whisper --whisper-model "C:\models\ggml-small.bin" `
   --translator ollama --model llama3.2
 ```
-
-**macOS/Linux**: the same commands with forward-slash paths and `\` for
-line continuation instead of `` ` ``.
-
-If `doctor` reports FFmpeg, Whisper, or Ollama as missing, install that
-tool first — `doctor` names exactly what's missing and, for a model,
-what to pull.
 
 ## Development
 
@@ -333,7 +399,7 @@ npm run build
 
 ## Tests
 
-132 tests across 16 files (`npm test`), all mocking the external boundary
+133 tests across 16 files (`npm test`), all mocking the external boundary
 (spawned processes, `fetch`) — covering the SRT/VTT parser and writer
 (CRLF/LF/BOM/multiline/empty/invalid entries), the validator, ffprobe JSON
 parsing and stream selection, ffmpeg argument construction (including
@@ -341,7 +407,8 @@ Unicode/spaced paths, never a shell), the whisper.cpp JSON output format,
 Ollama request/response handling (batching, retries, an exhausted-retries
 failure that never corrupts output, progress reporting), output path
 derivation and the overwrite guard, `--local`'s loopback check, temp file
-lifecycle (creation, cleanup, exit/signal hooks), the full pipeline
+lifecycle (creation, cleanup, exit/signal hooks, and a guard against ever
+being pointed at the OS temp/home/root directory), the full pipeline
 end-to-end with fake dependencies, and the CLI itself (`--help`,
 `--version`, an unknown command, `doctor`, `validate`'s exit codes and
 `--json` output, and the "missing tool" error paths this sandbox
