@@ -33,7 +33,7 @@ service-role key with this CLI.
 ```sh
 export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_ANON_KEY="your-anon-key"
-claude-console auth signup you@example.com
+claude-console auth signup you@example.com   # prompts for the password
 claude-console projects create "example"
 claude-console projects list
 ```
@@ -59,8 +59,8 @@ create policy "projects_delete_own" on public.projects for delete using (auth.ui
 ## Commands
 
 ```text
-claude-console auth signup <email> <password>
-claude-console auth login <email> <password>
+claude-console auth signup <email> [--password-stdin]
+claude-console auth login <email> [--password-stdin]
 claude-console auth whoami
 claude-console auth logout
 claude-console config set <key> <value>
@@ -70,7 +70,14 @@ claude-console projects show <id>
 claude-console projects delete <id>
 ```
 
-Avoid supplying passwords in shell history or scripts.
+Passwords are never accepted as command arguments, where they would be saved
+in shell history and visible in process listings. `auth signup` and
+`auth login` prompt for the password without echoing it. For scripts, pipe it
+in with `--password-stdin`, for example from a password manager:
+
+```sh
+pass show supabase/dev | claude-console auth login you@example.com --password-stdin
+```
 
 ## Development
 
