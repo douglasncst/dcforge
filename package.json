@@ -16,7 +16,13 @@
     "claude-console": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
+  ],
+  "keywords": [
+    "cli",
+    "supabase",
+    "typescript"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
