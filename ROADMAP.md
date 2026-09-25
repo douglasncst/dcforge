@@ -14,11 +14,17 @@
 - Improve configuration and authentication errors.
 - Add shell completions and package distribution.
 - Document self-hosted Supabase support.
-- Decide whether the repository becomes a workspace of independent tools
-  (for example the proposed Last.fm exporter) with shared CI, instead of a
-  single CLI package. Not needed yet: there's exactly one such candidate.
-- Any health-data feature needs its own threat model and storage design; it
-  must not share the session state file.
+- Repository structure (single package vs. a workspace of independent
+  tools): see
+  [`docs/decisions/0001-repo-structure.md`](docs/decisions/0001-repo-structure.md)
+  — not needed yet.
+- Last.fm exporter (#10): see
+  [`docs/lastfm-integration-options.md`](docs/lastfm-integration-options.md)
+  for how it could be merged, if it is.
+- Health-data feature: needs its own threat model and storage design before
+  any implementation — see
+  [`docs/health-security-design.md`](docs/health-security-design.md). Must
+  not share the session state file.
 
 ## Done
 
