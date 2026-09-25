@@ -2,10 +2,12 @@
 
 ## Next
 
+- Wire `test/integration/` into CI against a real (ephemeral, per-run)
+  Supabase instance — the suite and its RLS coverage exist and are
+  documented in [`test/integration/README.md`](test/integration/README.md),
+  but no CI job runs it yet.
 - Define a reviewed secure credential-storage architecture before enabling API-key commands.
-- Add integration tests against a disposable Supabase project, including RLS policies.
 - Publish a reproducible release workflow and versioning policy.
-- Upgrade the test toolchain (Vitest) to clear development-only audit findings.
 
 ## Later
 
@@ -14,6 +16,16 @@
 - Document self-hosted Supabase support.
 - Decide whether the repository becomes a workspace of independent tools
   (for example the proposed Last.fm exporter) with shared CI, instead of a
-  single CLI package.
+  single CLI package. Not needed yet: there's exactly one such candidate.
 - Any health-data feature needs its own threat model and storage design; it
   must not share the session state file.
+
+## Done
+
+- Upgraded the test toolchain to Vitest 5 (`npm audit`: 5 findings → 0).
+- `npm run typecheck` covers `test/` as well as `src/` (`tsconfig.test.json`).
+- Library code no longer calls `process.exit` directly (`CliError`,
+  `src/lib/errors.ts`); only the command layer and the top-level handler
+  decide the exit code.
+- `supabase/schema.sql` is idempotent (`drop policy if exists` before each
+  `create policy`), and the integration-test foundation above.

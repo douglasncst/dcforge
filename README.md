@@ -19,7 +19,8 @@ not store raw API keys until it has a reviewed secure-storage design.
 
 ## Quick start
 
-Requires Node.js 22 or later (required by `@supabase/supabase-js`).
+Requires Node.js 22.12 or later (required by `@supabase/supabase-js` and by
+Vitest).
 
 ```sh
 npm install
@@ -71,7 +72,7 @@ pass show supabase/dev | claude-console auth login you@example.com --password-st
 ## Development
 
 ```sh
-npm run typecheck
+npm run typecheck   # checks src/ and test/
 npm test
 ```
 
