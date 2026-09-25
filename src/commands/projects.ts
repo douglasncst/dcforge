@@ -3,7 +3,7 @@ import { listProjects, createProject, getProject, deleteProject } from "../lib/s
 import { printTable, fail } from "../lib/output.js";
 
 export function registerProjectCommands(program: Command): void {
-  const projects = program.command("projects").description("manage Console projects");
+  const projects = program.command("projects").description("manage projects");
 
   projects
     .command("create")

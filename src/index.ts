@@ -10,7 +10,7 @@ const program = new Command();
 
 program
   .name("claude-console")
-  .description("CLI for the Claude Code Console developer platform")
+  .description("CLI for a Supabase-backed developer project registry")
   .version("0.1.0");
 
 registerAuthCommands(program);
