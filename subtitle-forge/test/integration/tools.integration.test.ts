@@ -87,6 +87,35 @@ describe.skipIf(!caps.whisper)("Whisper backend (real binary)", () => {
       expect(doc.segments).toBeInstanceOf(Array);
     },
   );
+
+  // Regression for passing `-nt`, which made whisper.cpp stamp every segment
+  // with its full 30s decoding window. A tone (not silence: models tend to
+  // hallucinate a 30s "Thank you." over pure silence regardless of flags)
+  // gives a clip whose segments must end at or before the audio does.
+  it.skipIf(!modelPath)(
+    "keeps segment timestamps within a synthetic 5s clip's real duration (set WHISPER_TEST_MODEL_PATH to run)",
+    async () => {
+      if (!caps.ffmpeg) throw new Error("needs ffmpeg to build the fixture too");
+      const clipMs = 5_000;
+      const audioFixture = tempFilePath(workDir, ".wav");
+      const gen = await run("ffmpeg", [
+        "-y",
+        "-f",
+        "lavfi",
+        "-i",
+        "sine=frequency=440:sample_rate=16000",
+        "-t",
+        String(clipMs / 1000),
+        audioFixture,
+      ]);
+      expect(gen.exitCode).toBe(0);
+
+      const doc = await new WhisperCppTranscriber().transcribe(audioFixture, { modelPath });
+      for (const segment of doc.segments) {
+        expect(segment.endMs).toBeLessThanOrEqual(clipMs + 500);
+      }
+    },
+  );
 });
 
 describe.skipIf(!caps.ollama)("Ollama (real service)", () => {

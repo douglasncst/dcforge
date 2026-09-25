@@ -107,7 +107,10 @@ export class WhisperCppTranscriber implements Transcriber {
         "-oj", // write JSON with per-segment offsets
         "-of",
         outBase,
-        "-nt", // don't also print timestamps to stdout; we read the JSON file
+        // Deliberately no `-nt`/`--no-timestamps`: despite its help text ("do
+        // not print timestamps"), it disables timestamp generation entirely,
+        // so every JSON segment spans the whole 30s decoding window instead
+        // of the actual speech (observed with whisper.cpp v1.9.4).
       ];
       if (options.language) {
         args.push("-l", options.language);

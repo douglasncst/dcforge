@@ -9,12 +9,10 @@ subtitle-forge run movie.mkv --to pt-BR
 
 > **Status: experimental.** This is a first, real, end-to-end version — not
 > a prototype — but the interfaces, flags, and exact output are still
-> expected to change. `whisper.cpp` and Ollama integration in particular
-> are implemented against their documented behavior and have not been
-> exercised against real installations of either in the environment this
-> was built in (see [Manual testing](#manual-testing-status) below);
-> confirm they work before relying on `run`/`transcribe` for anything you
-> care about.
+> expected to change. The full pipeline has been run against real FFmpeg,
+> whisper.cpp, and Ollama installations on Linux, but only on short test
+> clips so far — not yet on full-length real videos, macOS, or Windows (see
+> [Manual testing status](#manual-testing-status) below).
 
 ## What it does
 
@@ -79,7 +77,7 @@ Quick answers to the questions that matter before you run anything:
 - **First real test:** [on Linux](#linux--macos) or
   [on Windows](#windows) — both are supported, see
   [Testing on your machine](#testing-on-your-machine).
-- **What's NOT verified against real tools yet:** see
+- **What has and hasn't been verified against real tools:** see
   [Manual testing status](#manual-testing-status) — read it before trusting
   `run`/`transcribe` with anything you care about.
 
@@ -290,8 +288,7 @@ input:
 
 ## Known limitations
 
-- **Not tested against real ffmpeg/Whisper/Ollama installations** in the
-  environment this was built in — none were available. See
+- **Real-tool testing so far is Linux-only and short clips only** — see
   [Manual testing status](#manual-testing-status).
 - **VTT support covers plain cues only.** `NOTE`/`STYLE`/`REGION` blocks
   and cue settings (`position:`, `align:`, ...) are recognized and skipped
@@ -313,20 +310,39 @@ input:
 
 ## Manual testing status
 
-**Run in this environment:** the full mocked test suite (`npm test`),
-`npm run typecheck`, `npm run build`, `npm audit`, `npm pack --dry-run`,
-and `npm run test:integration` (which correctly detected and reported that
-ffmpeg, ffprobe, a Whisper backend, and Ollama are **all absent** here —
-see its printed capability report — and skipped every real-tool check
-accordingly; nothing was reported as passing that didn't actually run).
+**Mocked suite:** `npm test`, `npm run typecheck`, `npm run build`,
+`npm audit`, and `npm pack --dry-run` (all but `npm audit` also run in CI).
 
-**Not run, because the tools aren't installed in this environment:**
-`inspect`/`extract`/`transcribe`/`run` against a real video file, real
-Whisper transcription, real Ollama translation, and anything involving
-Unicode/spaced real file paths on an actual filesystem beyond what the
-unit tests cover synthetically. These need to be tried on a machine that
-actually has FFmpeg, a Whisper backend, and Ollama installed — see
-[Testing on your machine](#testing-on-your-machine).
+**Tested against real tools on Linux** (x86_64, NVIDIA GPU with a CUDA
+build of whisper.cpp):
+
+- **FFmpeg/ffprobe** (6.1.1): `npm run test:integration`'s real checks, plus
+  `inspect` on the end-to-end test clip below.
+- **whisper.cpp** (v1.9.4, CUDA backend, `ggml-large-v3-turbo` model): the
+  integration suite's real transcription checks, with
+  `WHISPER_TEST_MODEL_PATH` set.
+- **Ollama** (0.34.4) with **`llama3.2`** and **`gemma3:4b`**: the
+  integration suite's real translation check, with `OLLAMA_TEST_MODEL` set,
+  once per model.
+- **The `run` pipeline end to end** (`inspect` → extract audio → transcribe
+  → translate to pt-BR → validate → write SRT, with `--local`) on a short
+  English speech clip, from a directory whose path contains spaces,
+  parentheses, and accented characters.
+
+That first real run found a bug the mocked suite couldn't: whisper.cpp was
+invoked with `-nt`, which — despite its help text, "do not print
+timestamps" — disables timestamp generation altogether, so every
+transcribed segment spanned whisper.cpp's full 30s window (a line of
+speech ending at ~10.4s was written as `00:00:00,000 --> 00:00:30,000`).
+It's fixed, with a mocked regression test on the argv and parsed
+timestamps and a real-model integration check that segments stay within a
+synthetic clip's duration.
+
+**Not yet tested:** full-length real videos; `extract` (and `run`'s
+extract-instead-of-transcribe path) against a real file with an embedded
+text subtitle stream; `translate` on a long, multi-batch subtitle file with
+a real model; CPU-only or non-NVIDIA whisper.cpp builds; other
+whisper.cpp/Ollama versions; macOS; Windows.
 
 ## Testing on your machine
 
@@ -399,7 +415,7 @@ npm run build
 
 ## Tests
 
-133 tests across 16 files (`npm test`), all mocking the external boundary
+134 tests across 16 files (`npm test`), all mocking the external boundary
 (spawned processes, `fetch`) — covering the SRT/VTT parser and writer
 (CRLF/LF/BOM/multiline/empty/invalid entries), the validator, ffprobe JSON
 parsing and stream selection, ffmpeg argument construction (including

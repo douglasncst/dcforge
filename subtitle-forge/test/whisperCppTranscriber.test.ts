@@ -1,5 +1,21 @@
-import { describe, expect, it } from "vitest";
-import { parseWhisperCppJson } from "../src/transcription/whisperCppTranscriber.js";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { writeFileSync } from "node:fs";
+
+vi.mock("../src/util/processRunner.js", () => ({
+  commandExists: vi.fn(),
+  run: vi.fn(),
+}));
+
+const { commandExists, run } = await import("../src/util/processRunner.js");
+const { WhisperCppTranscriber, parseWhisperCppJson } = await import("../src/transcription/whisperCppTranscriber.js");
+
+const commandExistsMock = vi.mocked(commandExists);
+const runMock = vi.mocked(run);
+
+beforeEach(() => {
+  commandExistsMock.mockReset();
+  runMock.mockReset();
+});
 
 describe("parseWhisperCppJson", () => {
   it("prefers offsets (already in ms) when present", () => {
@@ -47,5 +63,33 @@ describe("parseWhisperCppJson", () => {
 
   it("throws a clear error on invalid JSON", () => {
     expect(() => parseWhisperCppJson("not json")).toThrow(/valid JSON/);
+  });
+});
+
+describe("WhisperCppTranscriber.transcribe", () => {
+  // Regression: `-nt` made whisper.cpp v1.9.4 emit a 0–30s segment for speech
+  // that really ended at ~10.4s, because it disables timestamps altogether.
+  it("requests JSON output without -nt and preserves whisper.cpp's timestamps", async () => {
+    commandExistsMock.mockResolvedValue(true);
+    runMock.mockImplementation(async (_cmd, args) => {
+      const outBase = args[args.indexOf("-of") + 1];
+      writeFileSync(
+        `${outBase}.json`,
+        JSON.stringify({
+          transcription: [
+            { timestamps: { from: "00:00:00,000", to: "00:00:10,400" }, offsets: { from: 0, to: 10400 }, text: " Ask not." },
+          ],
+        }),
+      );
+      return { stdout: "", stderr: "", exitCode: 0 };
+    });
+
+    const doc = await new WhisperCppTranscriber().transcribe("/audio/speech.wav", { modelPath: "/models/ggml.bin" });
+
+    const [, args] = runMock.mock.calls[0];
+    expect(args).toContain("-oj");
+    expect(args).not.toContain("-nt");
+    expect(args).not.toContain("--no-timestamps");
+    expect(doc.segments).toEqual([{ id: 1, startMs: 0, endMs: 10400, text: "Ask not." }]);
   });
 });

@@ -38,8 +38,10 @@ Two checks need something this suite cannot provide on its own and are
 skipped even when their tool is present, unless you opt in:
 
 - **`WHISPER_TEST_MODEL_PATH=/path/to/model.bin`**: runs a real
-  transcription of a synthetic silent clip. No model is ever downloaded
-  automatically — point this at one you already have.
+  transcription of a synthetic silent clip, and checks that transcribing a
+  synthetic 5s tone never yields a segment ending past the clip's real
+  duration. No model is ever downloaded automatically — point this at one
+  you already have.
 - **`OLLAMA_TEST_MODEL=llama3.2`**: runs a real translation of one segment
   against a model you've already pulled (`ollama pull llama3.2`).
 
