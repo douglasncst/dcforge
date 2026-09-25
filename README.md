@@ -85,3 +85,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
 ## License
 
 Licensed under [Apache-2.0](LICENSE).
+
+## Other projects in this repository
+
+- [`lastfm/`](lastfm/): a separate CLI that exports a Last.fm user's most
+  played tracks as CSV.
