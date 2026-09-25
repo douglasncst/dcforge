@@ -1,7 +1,7 @@
 {
   "name": "claude-console",
   "version": "0.1.0",
-  "description": "CLI for the Claude Code Console developer platform — manage auth, projects, API keys, and usage from the terminal.",
+  "description": "Open-source TypeScript CLI for a Supabase-backed developer project registry.",
   "type": "module",
   "bin": {
     "claude-console": "./dist/index.js"
@@ -27,6 +27,6 @@
     "vitest": "^2.1.8"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }
