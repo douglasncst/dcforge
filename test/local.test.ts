@@ -87,6 +87,34 @@ describe("atomic writes", () => {
     expect(readdirSync(tmpHome)).toEqual(["state.json"]);
     expect(loadState().config.a).toBe("2");
   });
+
+  it("keeps every sequential write fully readable, never a partial one", () => {
+    for (let i = 0; i < 10; i++) {
+      saveState({ session: null, config: { i: String(i) } });
+      expect(loadState().config.i).toBe(String(i));
+    }
+    expect(readdirSync(tmpHome)).toEqual(["state.json"]);
+  });
+
+  it("removes the temporary file and does not touch the previous state when the final rename fails", () => {
+    saveState({ session: null, config: { before: "kept" } });
+
+    // Replace the destination with a non-empty directory so the rename in
+    // saveState's try block fails with ENOTEMPTY/EISDIR, exercising its
+    // catch branch instead of the happy path.
+    const file = join(tmpHome, "state.json");
+    rmSync(file);
+    mkdirSync(file);
+    writeFileSync(join(file, "keep.txt"), "x");
+
+    expect(() => saveState({ session: null, config: { before: "clobbered?" } })).toThrow();
+
+    const leftoverTmp = readdirSync(tmpHome).filter((f) => f.includes(".tmp"));
+    expect(leftoverTmp).toEqual([]);
+    // The half-finished write must not have left a mix of the old and new
+    // state anywhere it could be read back.
+    expect(readdirSync(file)).toEqual(["keep.txt"]);
+  });
 });
 
 describe("corrupted state", () => {
