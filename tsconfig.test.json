@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // "src" alone can't hold both source and test files as siblings, and
+    // this config only type-checks (never emits), so there's no output
+    // layout to preserve.
+    "rootDir": ".",
+    "noEmit": true
+  },
+  "include": ["src", "test"]
+}
