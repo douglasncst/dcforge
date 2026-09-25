@@ -53,11 +53,11 @@ function sessionFromSupabase(
 }
 
 export function registerAuthCommands(program: Command): void {
-  const auth = program.command("auth").description("manage your Console session");
+  const auth = program.command("auth").description("manage your session");
 
   auth
     .command("signup")
-    .description("create a new Console account")
+    .description("create a new account")
     .argument("<email>", "account email")
     .option("--password-stdin", "read the password from standard input instead of prompting")
     .allowExcessArguments(false)
@@ -80,7 +80,7 @@ export function registerAuthCommands(program: Command): void {
 
   auth
     .command("login")
-    .description("log in to the Claude Code Console")
+    .description("log in to your Supabase project")
     .argument("<email>", "account email")
     .option("--password-stdin", "read the password from standard input instead of prompting")
     .allowExcessArguments(false)

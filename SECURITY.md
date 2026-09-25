@@ -8,6 +8,20 @@ available. If it is unavailable, contact the maintainer through the contact
 method listed on the GitHub profile. Do not include active tokens, passwords,
 or personal data in a report.
 
-`claude-console` does not implement API-key storage. Supabase service-role keys
-must never be provided to the CLI. The local session file is restricted to the
-current user where the operating system supports those permissions.
+## How the CLI handles credentials
+
+- `claude-console` does not implement API-key storage.
+- Supabase service-role keys must never be provided to the CLI. Only the
+  public project URL and anon key are used; access control relies on
+  row-level security.
+- Passwords are never accepted as command arguments. They are read from a
+  hidden terminal prompt or, with `--password-stdin`, from standard input.
+  Passwords are sent to Supabase and never stored.
+- The Supabase access and refresh tokens are stored in
+  `~/.claude-console/state.json` (or `$CLAUDE_CONSOLE_HOME/state.json`). The
+  directory is created as `0700` and the file is always written atomically
+  as `0600`. These permissions are not enforced on Windows.
+- A state file that cannot be parsed is moved aside to
+  `state.json.corrupt-<timestamp>` rather than overwritten. Such a backup may
+  still contain tokens: delete it once you no longer need it.
+- `auth logout` clears the local session and asks Supabase to sign out.

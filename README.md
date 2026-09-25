@@ -19,7 +19,7 @@ not store raw API keys until it has a reviewed secure-storage design.
 
 ## Quick start
 
-Requires Node.js 20 or later.
+Requires Node.js 22 or later (required by `@supabase/supabase-js`).
 
 ```sh
 npm install
