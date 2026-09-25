@@ -69,6 +69,15 @@ describe.skipIf(process.platform === "win32")("state file permissions", () => {
     saveState({ session: { ...session }, config: {} });
     expect(statSync(file).mode & 0o777).toBe(0o600);
   });
+
+  it("tightens a state directory that already existed with looser permissions", () => {
+    // Simulates upgrading from a version of the CLI that created the
+    // directory without restrictive permissions (mkdirSync's mode argument
+    // only applies when it actually creates the directory).
+    chmodSync(tmpHome, 0o755);
+    saveState({ session: { ...session }, config: {} });
+    expect(statSync(tmpHome).mode & 0o777).toBe(0o700);
+  });
 });
 
 describe("atomic writes", () => {

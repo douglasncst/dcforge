@@ -1,4 +1,4 @@
-import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeSync } from "node:fs";
+import { chmodSync, closeSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, rmSync, writeSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -101,6 +101,14 @@ export function loadState(): State {
 export function saveState(state: State): void {
   const dir = stateDir();
   mkdirSync(dir, { recursive: true, mode: 0o700 });
+  // mkdirSync's mode only applies when it creates the directory: if it
+  // already existed (e.g. left over from an older version of the CLI) with
+  // looser permissions, recursive:true is a silent no-op on it. Tighten it
+  // explicitly every time. chmod is a no-op for POSIX permission bits on
+  // Windows, so skip it there rather than touch the read-only attribute.
+  if (process.platform !== "win32") {
+    chmodSync(dir, 0o700);
+  }
 
   const file = stateFile();
   const tmp = `${file}.${process.pid}.${randomUUID()}.tmp`;

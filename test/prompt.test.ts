@@ -50,6 +50,36 @@ describe("readHidden", () => {
   it("refuses to run when input is not a terminal", async () => {
     await expect(readHidden("", new PassThrough(), sink())).rejects.toThrow(/not a terminal/);
   });
+
+  it("rejects and restores the terminal when the input stream errors", async () => {
+    const { input, rawModes } = fakeTty();
+    const pending = readHidden("", input, sink());
+    input.write("partial");
+    input.emit("error", new Error("boom"));
+    await expect(pending).rejects.toThrow("boom");
+    expect(rawModes).toEqual([true, false]);
+  });
+
+  it("rejects instead of hanging when the input stream closes before Enter", async () => {
+    const { input, rawModes } = fakeTty();
+    const pending = readHidden("", input, sink());
+    input.write("partial");
+    input.end();
+    await expect(pending).rejects.toThrow(/closed before a line/);
+    expect(rawModes).toEqual([true, false]);
+  });
+
+  it("reassembles a multi-byte UTF-8 character split across chunks", async () => {
+    const { input } = fakeTty();
+    const pending = readHidden("", input, sink());
+    // "é" (U+00E9) is 2 bytes in UTF-8: 0xC3 0xA9. Write them in separate
+    // chunks, as a slow pipe or a paste could deliver them.
+    const bytes = Buffer.from("café", "utf-8");
+    input.write(bytes.subarray(0, 3)); // "caf" + first byte of "é"
+    input.write(bytes.subarray(3)); // second byte of "é"
+    input.write("\n");
+    await expect(pending).resolves.toBe("café");
+  });
 });
 
 describe("readFirstLine", () => {
