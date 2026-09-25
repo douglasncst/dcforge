@@ -1,5 +1,5 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import { chmodSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { loadState, saveState, newId } from "../src/lib/local.js";
@@ -14,9 +14,19 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  process.env.CLAUDE_CONSOLE_HOME = originalHome;
+  if (originalHome === undefined) delete process.env.CLAUDE_CONSOLE_HOME;
+  else process.env.CLAUDE_CONSOLE_HOME = originalHome;
   rmSync(tmpHome, { recursive: true, force: true });
+  vi.restoreAllMocks();
 });
+
+const session = {
+  email: "dev@example.com",
+  userId: "user-1",
+  accessToken: "access-token",
+  refreshToken: "refresh-token",
+  expiresAt: 1234567890,
+};
 
 describe("local state", () => {
   it("returns empty state when nothing is persisted yet", () => {
@@ -28,22 +38,83 @@ describe("local state", () => {
   it("round-trips saved state", () => {
     const state = loadState();
     state.config.supabase_url = "https://example.supabase.co";
-    state.session = {
-      email: "dev@example.com",
-      userId: "user-1",
-      accessToken: "access-token",
-      refreshToken: "refresh-token",
-      expiresAt: 1234567890,
-    };
+    state.session = { ...session };
     saveState(state);
 
     const reloaded = loadState();
     expect(reloaded.config.supabase_url).toBe("https://example.supabase.co");
-    expect(reloaded.session?.email).toBe("dev@example.com");
-    expect(reloaded.session?.userId).toBe("user-1");
+    expect(reloaded.session).toEqual(session);
   });
 
   it("generates ids with the given prefix", () => {
     expect(newId("proj")).toMatch(/^proj_[a-f0-9]{12}$/);
+  });
+});
+
+describe.skipIf(process.platform === "win32")("state file permissions", () => {
+  it("creates the state directory as 0700 and the file as 0600", () => {
+    const home = join(tmpHome, "nested");
+    process.env.CLAUDE_CONSOLE_HOME = home;
+    saveState({ session: { ...session }, config: {} });
+
+    expect(statSync(home).mode & 0o777).toBe(0o700);
+    expect(statSync(join(home, "state.json")).mode & 0o777).toBe(0o600);
+  });
+
+  it("tightens a state file that was created with looser permissions", () => {
+    const file = join(tmpHome, "state.json");
+    writeFileSync(file, JSON.stringify({ session: null, config: {} }));
+    chmodSync(file, 0o644);
+
+    saveState({ session: { ...session }, config: {} });
+    expect(statSync(file).mode & 0o777).toBe(0o600);
+  });
+});
+
+describe("atomic writes", () => {
+  it("leaves no temporary files behind", () => {
+    saveState({ session: null, config: { a: "1" } });
+    saveState({ session: null, config: { a: "2" } });
+    expect(readdirSync(tmpHome)).toEqual(["state.json"]);
+    expect(loadState().config.a).toBe("2");
+  });
+});
+
+describe("corrupted state", () => {
+  it("moves invalid JSON aside instead of discarding it", () => {
+    const warn = vi.spyOn(console, "error").mockImplementation(() => {});
+    const file = join(tmpHome, "state.json");
+    writeFileSync(file, "{ not json");
+
+    const state = loadState();
+    expect(state).toEqual({ session: null, config: {} });
+
+    const backups = readdirSync(tmpHome).filter((f) => f.startsWith("state.json.corrupt-"));
+    expect(backups).toHaveLength(1);
+    expect(readFileSync(join(tmpHome, backups[0]), "utf-8")).toBe("{ not json");
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("is not valid JSON"));
+  });
+
+  it("moves a non-object JSON document aside", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    writeFileSync(join(tmpHome, "state.json"), "[]");
+
+    expect(loadState()).toEqual({ session: null, config: {} });
+    expect(readdirSync(tmpHome).some((f) => f.startsWith("state.json.corrupt-"))).toBe(true);
+  });
+
+  it("drops malformed fields but keeps valid ones", () => {
+    writeFileSync(
+      join(tmpHome, "state.json"),
+      JSON.stringify({ session: { email: "x" }, config: { ok: "yes", bad: 42 } }),
+    );
+    expect(loadState()).toEqual({ session: null, config: { ok: "yes" } });
+  });
+
+  it("refuses to treat an unreadable path as empty state", () => {
+    // A directory where the file should be makes the read fail with EISDIR,
+    // which must not be mistaken for "no state yet".
+    mkdirSync(join(tmpHome, "state.json"));
+    expect(() => loadState()).toThrow(/could not read/);
   });
 });
