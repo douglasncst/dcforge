@@ -5,6 +5,7 @@ import { registerConfigCommands } from "./commands/config.js";
 import { registerProjectCommands } from "./commands/projects.js";
 import { registerKeyCommands } from "./commands/keys.js";
 import { registerUsageCommands } from "./commands/usage.js";
+import { CliError } from "./lib/errors.js";
 
 const program = new Command();
 
@@ -21,5 +22,5 @@ registerUsageCommands(program);
 
 program.parseAsync(process.argv).catch((err) => {
   console.error(err instanceof Error ? err.message : err);
-  process.exit(1);
+  process.exit(err instanceof CliError ? err.exitCode : 1);
 });

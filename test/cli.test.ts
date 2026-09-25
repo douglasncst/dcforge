@@ -100,3 +100,35 @@ describe("session guard", () => {
     expect(res.stderr).toMatch(/not logged in/);
   });
 });
+
+describe("errors thrown from library code", () => {
+  // resolveSupabaseConfig() and getAuthedClient() (src/lib/supabase.ts) throw
+  // CliError instead of calling process.exit directly. These confirm the
+  // error still reaches the user and the process with the right exit code
+  // when it crosses an async commander action and the top-level handler.
+  function runWithoutSupabaseConfig(args: string[]) {
+    const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_CONSOLE_HOME: home };
+    delete env.SUPABASE_URL;
+    delete env.SUPABASE_ANON_KEY;
+    const result = spawnSync(process.execPath, ["--import", "tsx", entry, ...args], {
+      env,
+      encoding: "utf-8",
+      timeout: 30_000,
+    });
+    return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+  }
+
+  it("reports missing Supabase configuration with a clean exit, not a stack trace", () => {
+    const res = runWithoutSupabaseConfig(["projects", "list"]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain("Supabase is not configured");
+    expect(res.stderr).not.toContain("at CliError");
+    expect(res.stderr).not.toContain("node_modules");
+  });
+
+  it("takes the same path through an async command action (auth login)", () => {
+    const res = runWithoutSupabaseConfig(["auth", "login", "dev@example.com", "--password-stdin"]);
+    expect(res.status).toBe(1);
+    expect(res.stderr).toContain("Supabase is not configured");
+  });
+});
