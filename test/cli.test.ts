@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -84,6 +84,86 @@ describe("config commands", () => {
     const res = run(["config", "get", "nope"]);
     expect(res.status).toBe(1);
     expect(res.stderr).toMatch(/no config value set/);
+  });
+
+  it("lists all values, and (none) when empty", () => {
+    const empty = run(["config", "list"]);
+    expect(empty.status).toBe(0);
+    expect(empty.stdout).toContain("(none)");
+
+    run(["config", "set", "a", "1"]);
+    run(["config", "set", "b", "2"]);
+    const listed = run(["config", "list"]);
+    expect(listed.status).toBe(0);
+    expect(listed.stdout).toContain("a");
+    expect(listed.stdout).toContain("1");
+    expect(listed.stdout).toContain("b");
+    expect(listed.stdout).toContain("2");
+  });
+
+  it("unset removes a value", () => {
+    run(["config", "set", "a", "1"]);
+    expect(run(["config", "unset", "a"]).status).toBe(0);
+    expect(run(["config", "get", "a"]).status).toBe(1);
+  });
+});
+
+describe("top-level CLI behavior", () => {
+  it("--version prints the version and exits 0", () => {
+    const res = run(["--version"]);
+    expect(res.status).toBe(0);
+    expect(res.stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(res.stderr).toBe("");
+  });
+
+  it("--help lists every command group and exits 0", () => {
+    const res = run(["--help"]);
+    expect(res.status).toBe(0);
+    for (const group of ["auth", "config", "projects", "keys", "usage"]) {
+      expect(res.stdout).toContain(group);
+    }
+    expect(res.stderr).toBe("");
+  });
+
+  it("rejects an unknown command instead of silently doing nothing", () => {
+    const res = run(["definitely-not-a-command"]);
+    expect(res.status).not.toBe(0);
+    expect(res.stderr).toMatch(/unknown command/i);
+  });
+
+  it("writes success output to stdout and errors to stderr, never both mixed", () => {
+    const ok = run(["config", "set", "a", "1"]);
+    expect(ok.stdout.trim()).toBe("a = 1");
+    expect(ok.stderr).toBe("");
+
+    const err = run(["config", "get", "missing"]);
+    expect(err.stdout).toBe("");
+    expect(err.stderr).toContain("Error:");
+  });
+});
+
+describe("state file lifecycle", () => {
+  it("works normally when the state directory does not exist yet", () => {
+    expect(existsSync(home)).toBe(true); // mkdtemp already created it
+    rmSync(home, { recursive: true, force: true });
+    expect(existsSync(home)).toBe(false);
+
+    const res = run(["config", "list"]);
+    expect(res.status).toBe(0);
+    expect(res.stdout).toContain("(none)");
+    expect(existsSync(home)).toBe(false); // a read-only command must not create it
+  });
+
+  it("quarantines a corrupted state file instead of crashing or silently discarding it", () => {
+    writeFileSync(join(home, "state.json"), "{ this is not json");
+
+    const res = run(["config", "list"]);
+    expect(res.status).toBe(0);
+    expect(res.stderr).toMatch(/not valid JSON/);
+    expect(res.stderr).toMatch(/state\.json\.corrupt-/);
+
+    const files = readdirSync(home);
+    expect(files.some((f) => f.startsWith("state.json.corrupt-"))).toBe(true);
   });
 });
 
