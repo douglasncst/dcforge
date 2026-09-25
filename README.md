@@ -40,21 +40,10 @@ claude-console projects list
 
 ## Supabase setup
 
-Run this SQL in the Supabase SQL editor before using project commands:
-
-```sql
-create table if not exists public.projects (
-  id text primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
-  created_at timestamptz not null default now()
-);
-alter table public.projects enable row level security;
-create policy "projects_select_own" on public.projects for select using (auth.uid() = user_id);
-create policy "projects_insert_own" on public.projects for insert with check (auth.uid() = user_id);
-create policy "projects_update_own" on public.projects for update using (auth.uid() = user_id);
-create policy "projects_delete_own" on public.projects for delete using (auth.uid() = user_id);
-```
+Run [`supabase/schema.sql`](supabase/schema.sql) in the Supabase SQL editor
+(or `supabase db execute -f supabase/schema.sql`) before using project
+commands. It's safe to run more than once — re-run it after pulling a change
+to that file.
 
 ## Commands
 
@@ -85,6 +74,12 @@ pass show supabase/dev | claude-console auth login you@example.com --password-st
 npm run typecheck
 npm test
 ```
+
+`npm test` never touches a real Supabase project. A separate, opt-in suite
+exercises the row-level security policies in `supabase/schema.sql` against a
+**disposable** Supabase project — see
+[`test/integration/README.md`](test/integration/README.md) before running
+`npm run test:integration`.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
 [ROADMAP.md](ROADMAP.md).
