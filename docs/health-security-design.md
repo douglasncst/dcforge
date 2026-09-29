@@ -20,7 +20,7 @@ Reviewed directly from the branch, not from its PR description:
 1. **Shared state file.** `src/lib/store.ts` on that branch adds
    `healthConnection` and `healthRecords` to the *same* `State` type that
    holds the Supabase session's access and refresh tokens, in the *same*
-   `~/.claude-console/state.json`. The CLI's `health` commands and the
+   legacy registry state file. The CLI's `health` commands and the
    separate `health-mcp-server/` process both read and write it directly (it
    duplicates `src/lib/store.ts`'s `loadState`/`saveState` rather than
    importing them). Two processes now race on one file, and a bug or an
@@ -51,8 +51,8 @@ this particular implementation didn't design for data this sensitive.
 ### 1. Storage isolation
 
 - Health data lives in **its own file**, e.g.
-  `~/.claude-console/health/records.json` or a dedicated
-  `CLAUDE_CONSOLE_HEALTH_HOME`, never inside `state.json`.
+  `~/.dcforge/health/records.json` or a dedicated `DCFORGE_HEALTH_HOME`,
+  never inside `state.json`.
 - It reuses `src/lib/local.ts`'s atomic-write and permission-tightening
   logic (or a factored-out version of it) — `0600` file, `0700` directory,
   tightened on every save, not just on creation. No new hand-rolled

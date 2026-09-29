@@ -34,7 +34,7 @@ npm run test:integration
 ```
 
 These are deliberately **not** `SUPABASE_URL`/`SUPABASE_ANON_KEY` (what the
-CLI itself reads): having those set for everyday `claude-console` use must
+CLI itself reads): having those set for everyday `dcforge` use must
 never make this suite silently run against a real project. Without
 `SUPABASE_INTEGRATION_URL`/`SUPABASE_INTEGRATION_ANON_KEY` set, the suite
 fails immediately with a message naming what's missing — it does not skip

@@ -33,8 +33,8 @@ working in this repository. Human contributors should read
 - Fix failures caused by your change. Never remove, skip or weaken tests to
   make the suite pass.
 - `npm test` must not need network access, real credentials or a real
-  Supabase project. Point `CLAUDE_CONSOLE_HOME` at a temporary directory;
-  never read or write the real `~/.claude-console`. The one exception is
+  Supabase project. Point `DCFORGE_HOME` at a temporary directory;
+  never read or write the real `~/.dcforge`. The one exception is
   `npm run test:integration` (`test/integration/`), which is opt-in, never
   runs from `npm test` or CI, and requires
   `SUPABASE_INTEGRATION_URL`/`SUPABASE_INTEGRATION_ANON_KEY` pointed at a

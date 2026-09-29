@@ -1,26 +1,44 @@
-# claude-console
+# DCForge
 
-`claude-console` is an open-source TypeScript CLI for experimenting with a
-Supabase-backed developer project registry. It provides local configuration,
-email-based authentication through Supabase, and project CRUD commands.
+DCForge is an open-source forge for independent developer tools, local-first
+AI utilities, and automation experiments.
 
-The project is independent and is not affiliated with or endorsed by Anthropic,
-OpenAI, or Supabase.
+Projects in DCForge may integrate with open-source models, Ollama, OpenAI,
+Anthropic, Supabase, or other services where appropriate. DCForge itself is
+independent and is not affiliated with or endorsed by those providers.
 
-## What works today
+## Projects
 
-- Create an account and sign in to a Supabase project you control.
-- Create, list, inspect, and delete projects with row-level access controls.
-- Keep CLI configuration and the Supabase session in a local file with
-  owner-only permissions where supported.
+### DCForge Registry
 
-Credential and API-key management are deliberately disabled. The project will
-not store raw API keys until it has a reviewed secure-storage design.
+The root `dcforge` package is a TypeScript CLI for experimenting with
+Supabase-backed developer workflows: local configuration, email-based
+authentication, and project registry CRUD with row-level access controls.
 
-## Quick start
+It stores configuration and session data in `~/.dcforge/state.json` (or
+`$DCFORGE_HOME/state.json`) with owner-only permissions where supported.
+Existing state in the former location is copied safely on first use when no
+DCForge state exists; the source file is preserved.
 
-Requires Node.js 22.12 or later (required by `@supabase/supabase-js` and by
-Vitest).
+Credential and API-key management are deliberately disabled until a reviewed
+secure-storage design exists.
+
+### Subtitle Forge
+
+[`subtitle-forge/`](subtitle-forge/) is an experimental local-first CLI for
+extracting, transcribing, translating, and validating video/audio subtitles
+with FFmpeg, whisper.cpp, and Ollama. It is an independent package with its
+own lockfile, tests, and CI workflow.
+
+### Proposed
+
+- Last.fm exporter (#10) remains a separate proposal.
+- Health/MCP (#8) is not integrated: it requires a dedicated threat model,
+  isolated storage, deletion lifecycle, and security review.
+
+## DCForge Registry quick start
+
+Requires Node.js 22.12 or later.
 
 ```sh
 npm install
@@ -34,57 +52,61 @@ service-role key with this CLI.
 ```sh
 export SUPABASE_URL="https://your-project.supabase.co"
 export SUPABASE_ANON_KEY="your-anon-key"
-claude-console auth signup you@example.com   # prompts for the password
-claude-console projects create "example"
-claude-console projects list
+dcforge auth signup you@example.com
+dcforge projects create "example"
+dcforge projects list
 ```
-
-## Supabase setup
 
 Run [`supabase/schema.sql`](supabase/schema.sql) in the Supabase SQL editor
 (or `supabase db execute -f supabase/schema.sql`) before using project
-commands. It's safe to run more than once — re-run it after pulling a change
-to that file.
+commands. It is safe to run more than once.
 
 ## Commands
 
 ```text
-claude-console auth signup <email> [--password-stdin]
-claude-console auth login <email> [--password-stdin]
-claude-console auth whoami
-claude-console auth logout
-claude-console config set <key> <value>
-claude-console projects create <name>
-claude-console projects list
-claude-console projects show <id>
-claude-console projects delete <id>
+dcforge auth signup <email> [--password-stdin]
+dcforge auth login <email> [--password-stdin]
+dcforge auth whoami
+dcforge auth logout
+dcforge config set <key> <value>
+dcforge projects create <name>
+dcforge projects list
+dcforge projects show <id>
+dcforge projects delete <id>
 ```
 
-Passwords are never accepted as command arguments, where they would be saved
-in shell history and visible in process listings. `auth signup` and
-`auth login` prompt for the password without echoing it. For scripts, pipe it
-in with `--password-stdin`, for example from a password manager:
+Passwords are never accepted as command arguments. Interactive commands use
+a hidden prompt; scripts can use `--password-stdin`:
 
 ```sh
-pass show supabase/dev | claude-console auth login you@example.com --password-stdin
+pass show supabase/dev | dcforge auth login you@example.com --password-stdin
 ```
 
 ## Development
 
+Root package:
+
 ```sh
-npm run typecheck   # checks src/ and test/
+npm ci
+npm run typecheck
 npm test
+npm run build
+npm pack --dry-run
 ```
 
-`npm test` never touches a real Supabase project. A separate, opt-in suite
-exercises the row-level security policies in `supabase/schema.sql` against a
-**disposable** Supabase project — see
-[`test/integration/README.md`](test/integration/README.md) before running
-`npm run test:integration`.
+Subtitle Forge:
+
+```sh
+cd subtitle-forge
+npm ci
+npm run typecheck
+npm test
+npm run build
+npm pack --dry-run
+```
+
+The root unit suite does not access a real Supabase project. Its opt-in RLS
+suite is documented in [`test/integration/README.md`](test/integration/README.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and
-[ROADMAP.md](ROADMAP.md).
-
-## License
-
-Licensed under [Apache-2.0](LICENSE).
+[ROADMAP.md](ROADMAP.md). Licensed under [Apache-2.0](LICENSE).

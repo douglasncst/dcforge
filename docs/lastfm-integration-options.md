@@ -31,8 +31,8 @@ the branch:
   would need the same bump if it starts sharing tooling with the root
   package.
 
-It shares no code, no state, and no Supabase dependency with
-`claude-console`. Architecturally it is already independent; the only thing
+It shares no code, no state, and no Supabase dependency with `dcforge`.
+Architecturally it is already independent; the only thing
 tying it to this repository is which directory its files happen to sit in.
 
 ## Options
@@ -42,7 +42,7 @@ tying it to this repository is which directory its files happen to sit in.
 Its own `douglasncst/lastfm` (or similar), own issues, own releases, own CI.
 
 - **For:** fully independent versioning and release cadence; no coupling to
-  `claude-console`'s CI or `main` branch at all; clearest ownership boundary
+  `dcforge`'s CI or `main` branch at all; clearest ownership boundary
   if it's ever handed to someone else or archived independently.
 - **Against:** another repository to keep dependabot, templates, LICENSE,
   etc. in sync across; loses the "one place" convenience of the current
@@ -57,11 +57,11 @@ entry.
 
 - **For:** no repository-management overhead; matches ADR 0001's
   recommendation not to force a workspace; a contributor working on
-  `lastfm/` never touches `claude-console`'s lockfile or vice versa; still
+  `lastfm/` never touches `dcforge`'s lockfile or vice versa; still
   gets a real, working CI check per PR.
 - **Against:** shares a `main` branch and issue tracker with an unrelated
   tool, which can be confusing for outside contributors who came for one and
-  not the other; a release of `lastfm` isn't a release of `claude-console`
+  not the other; a release of `lastfm` isn't a release of `dcforge`
   or vice versa, and nothing currently expresses that (no per-directory
   tags, no changelog separation).
 
@@ -86,7 +86,7 @@ typecheck, test, build, run from `lastfm/`), and give it its own
 `dependabot.yml` entry (`directory: "/lastfm"`) so its `vitest@2` gets the
 same kind of update this round gave the root package. Move to **A** only if
 it later needs a release cadence, issue tracker, or audience genuinely
-independent of `claude-console`'s — nothing about it today requires that.
+independent of `dcforge`'s — nothing about it today requires that.
 
 This is not an instruction to merge #10 in this round — that remains a
 product decision (does a Last.fm exporter belong in a "developer project

@@ -23,9 +23,9 @@ service-role keys. Use anonymized fixtures for tests.
    validated it. The PR template prompts for the same information.
 
 Tests in `npm test` must not need network access or a real Supabase project.
-The CLI tests in `test/cli.test.ts` run the real binary with
-`CLAUDE_CONSOLE_HOME` pointed at a temporary directory; follow that pattern
-instead of touching `~/.claude-console`. Library code (`src/lib/**`) should
+The CLI tests in `test/cli.test.ts` run the real binary with `DCFORGE_HOME`
+pointed at a temporary directory; follow that pattern instead of touching
+`~/.dcforge`. Library code (`src/lib/**`) should
 throw or return, not call `process.exit` — see `src/lib/errors.ts`'s
 `CliError` and how `src/lib/supabase.ts` uses it; only command files
 (`src/commands/**`) and `src/index.ts`'s top-level handler decide to end the

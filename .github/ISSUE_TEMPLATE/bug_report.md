@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something in claude-console doesn't work as expected
+about: Something in DCForge doesn't work as expected
 title: ""
 labels: bug
 ---
@@ -10,14 +10,14 @@ even redacted or partially — paste sanitized output only.**
 
 ## Version
 
-- `claude-console` version (`claude-console --version`):
+- `dcforge` version (`dcforge --version`):
 - Node version (`node --version`):
 - OS:
 
 ## Command
 
 ```
-claude-console ...
+dcforge ...
 ```
 
 ## Expected behavior
