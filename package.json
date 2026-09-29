@@ -1,20 +1,38 @@
 {
-  "name": "claude-console",
+  "name": "dcforge",
   "version": "0.1.0",
-  "description": "CLI for the Claude Code Console developer platform — manage auth, projects, API keys, and usage from the terminal.",
+  "description": "Open-source TypeScript CLI for a Supabase-backed developer project registry.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/douglasncst/dcforge.git"
+  },
+  "bugs": {
+    "url": "https://github.com/douglasncst/dcforge/issues"
+  },
+  "homepage": "https://github.com/douglasncst/dcforge#readme",
   "type": "module",
   "bin": {
-    "claude-console": "./dist/index.js"
+    "dcforge": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "NOTICE"
+  ],
+  "keywords": [
+    "dcforge",
+    "cli",
+    "developer-tools",
+    "supabase",
+    "typescript"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "test:integration": "vitest run -c vitest.integration.config.ts",
+    "typecheck": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
@@ -24,9 +42,9 @@
     "@types/node": "^22.10.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^5.0.2"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22.12"
   }
 }

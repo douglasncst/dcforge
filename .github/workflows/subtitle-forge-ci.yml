@@ -1,0 +1,49 @@
+name: subtitle-forge CI
+
+on:
+  pull_request:
+    paths:
+      - "subtitle-forge/**"
+      - ".github/workflows/subtitle-forge-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "subtitle-forge/**"
+      - ".github/workflows/subtitle-forge-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: subtitle-forge-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: subtitle-forge
+
+jobs:
+  validate:
+    name: Validate (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: subtitle-forge/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      # ffmpeg/ffprobe are present on GitHub's ubuntu-latest runners, but
+      # neither Whisper nor Ollama are: `npm test` never depends on them
+      # (everything external is mocked) — see test/integration/README.md
+      # for the separate, opt-in suite that does.
+      - run: npm test
+      - run: npm run build
+      - run: npm pack --dry-run

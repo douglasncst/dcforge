@@ -21,17 +21,18 @@ describe("resolveSupabaseConfig", () => {
   let originalKey: string | undefined;
 
   beforeEach(() => {
-    tmpHome = mkdtempSync(join(tmpdir(), "claude-console-test-"));
-    originalHome = process.env.CLAUDE_CONSOLE_HOME;
+    tmpHome = mkdtempSync(join(tmpdir(), "dcforge-test-"));
+    originalHome = process.env.DCFORGE_HOME;
     originalUrl = process.env.SUPABASE_URL;
     originalKey = process.env.SUPABASE_ANON_KEY;
-    process.env.CLAUDE_CONSOLE_HOME = tmpHome;
+    process.env.DCFORGE_HOME = tmpHome;
     delete process.env.SUPABASE_URL;
     delete process.env.SUPABASE_ANON_KEY;
   });
 
   afterEach(() => {
-    process.env.CLAUDE_CONSOLE_HOME = originalHome;
+    if (originalHome === undefined) delete process.env.DCFORGE_HOME;
+    else process.env.DCFORGE_HOME = originalHome;
     if (originalUrl === undefined) delete process.env.SUPABASE_URL;
     else process.env.SUPABASE_URL = originalUrl;
     if (originalKey === undefined) delete process.env.SUPABASE_ANON_KEY;
