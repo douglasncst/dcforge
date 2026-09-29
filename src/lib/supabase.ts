@@ -8,8 +8,8 @@ export function resolveSupabaseConfig(): { url: string; anonKey: string } {
   const anonKey = process.env.SUPABASE_ANON_KEY ?? state.config.supabase_anon_key;
   if (!url || !anonKey) {
     throw new CliError(
-      "Supabase is not configured. Run `claude-console config set supabase_url <url>` " +
-        "and `claude-console config set supabase_anon_key <key>`, or set SUPABASE_URL / " +
+      "Supabase is not configured. Run `dcforge config set supabase_url <url>` " +
+        "and `dcforge config set supabase_anon_key <key>`, or set SUPABASE_URL / " +
         "SUPABASE_ANON_KEY environment variables.",
     );
   }
@@ -42,7 +42,7 @@ export async function getAuthedClient(): Promise<{ client: SupabaseClient; userI
   const client = getSupabaseClient();
   const state = loadState();
   if (!state.session) {
-    throw new CliError("not logged in. Run `claude-console auth login <email>`.");
+    throw new CliError("not logged in. Run `dcforge auth login <email>`.");
   }
 
   const { data, error } = await client.auth.setSession({
@@ -52,7 +52,7 @@ export async function getAuthedClient(): Promise<{ client: SupabaseClient; userI
   if (error || !data.session) {
     throw new CliError(
       `session expired or invalid (${error?.message ?? "no session"}). ` +
-        "Run `claude-console auth login` again.",
+        "Run `dcforge auth login` again.",
     );
   }
 

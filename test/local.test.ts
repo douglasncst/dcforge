@@ -6,16 +6,21 @@ import { loadState, saveState, newId } from "../src/lib/local.js";
 
 let tmpHome: string;
 let originalHome: string | undefined;
+let originalLegacyHome: string | undefined;
 
 beforeEach(() => {
-  tmpHome = mkdtempSync(join(tmpdir(), "claude-console-test-"));
-  originalHome = process.env.CLAUDE_CONSOLE_HOME;
-  process.env.CLAUDE_CONSOLE_HOME = tmpHome;
+  tmpHome = mkdtempSync(join(tmpdir(), "dcforge-test-"));
+  originalHome = process.env.DCFORGE_HOME;
+  originalLegacyHome = process.env.CLAUDE_CONSOLE_HOME;
+  process.env.DCFORGE_HOME = tmpHome;
+  delete process.env.CLAUDE_CONSOLE_HOME;
 });
 
 afterEach(() => {
-  if (originalHome === undefined) delete process.env.CLAUDE_CONSOLE_HOME;
-  else process.env.CLAUDE_CONSOLE_HOME = originalHome;
+  if (originalHome === undefined) delete process.env.DCFORGE_HOME;
+  else process.env.DCFORGE_HOME = originalHome;
+  if (originalLegacyHome === undefined) delete process.env.CLAUDE_CONSOLE_HOME;
+  else process.env.CLAUDE_CONSOLE_HOME = originalLegacyHome;
   rmSync(tmpHome, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
@@ -49,12 +54,41 @@ describe("local state", () => {
   it("generates ids with the given prefix", () => {
     expect(newId("proj")).toMatch(/^proj_[a-f0-9]{12}$/);
   });
+
+  it("migrates legacy state once without modifying its source", () => {
+    const legacyHome = mkdtempSync(join(tmpdir(), "legacy-registry-test-"));
+    const legacyFile = join(legacyHome, "state.json");
+    const legacyState = { session: { ...session }, config: { supabase_url: "https://legacy.example" } };
+    writeFileSync(legacyFile, JSON.stringify(legacyState));
+    process.env.CLAUDE_CONSOLE_HOME = legacyHome;
+
+    const migrated = loadState();
+
+    expect(migrated).toEqual(legacyState);
+    expect(readFileSync(legacyFile, "utf-8")).toBe(JSON.stringify(legacyState));
+    expect(readFileSync(join(tmpHome, "state.json"), "utf-8")).toContain("legacy.example");
+
+    rmSync(legacyHome, { recursive: true, force: true });
+    delete process.env.CLAUDE_CONSOLE_HOME;
+  });
+
+  it("does not overwrite existing DCForge state with legacy state", () => {
+    saveState({ session: null, config: { source: "dcforge" } });
+    const legacyHome = mkdtempSync(join(tmpdir(), "legacy-registry-test-"));
+    writeFileSync(join(legacyHome, "state.json"), JSON.stringify({ session: null, config: { source: "legacy" } }));
+    process.env.CLAUDE_CONSOLE_HOME = legacyHome;
+
+    expect(loadState().config.source).toBe("dcforge");
+
+    rmSync(legacyHome, { recursive: true, force: true });
+    delete process.env.CLAUDE_CONSOLE_HOME;
+  });
 });
 
 describe.skipIf(process.platform === "win32")("state file permissions", () => {
   it("creates the state directory as 0700 and the file as 0600", () => {
     const home = join(tmpHome, "nested");
-    process.env.CLAUDE_CONSOLE_HOME = home;
+    process.env.DCFORGE_HOME = home;
     saveState({ session: { ...session }, config: {} });
 
     expect(statSync(home).mode & 0o777).toBe(0o700);

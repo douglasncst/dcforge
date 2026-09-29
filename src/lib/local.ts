@@ -17,11 +17,19 @@ export interface State {
 }
 
 function stateDir(): string {
-  return process.env.CLAUDE_CONSOLE_HOME ?? join(homedir(), ".claude-console");
+  return process.env.DCFORGE_HOME ?? join(homedir(), ".dcforge");
 }
 
 function stateFile(): string {
   return join(stateDir(), "state.json");
+}
+
+/**
+ * The old path is a one-way migration source only. It is never used for new
+ * writes, so a current DCForge installation has a single state namespace.
+ */
+function legacyStateFile(): string {
+  return join(process.env.CLAUDE_CONSOLE_HOME ?? join(homedir(), ".claude-console"), "state.json");
 }
 
 function emptyState(): State {
@@ -63,14 +71,13 @@ function quarantine(file: string, reason: string): void {
   console.error(`Warning: ${reason} Moved it to ${backup} and started with empty state.`);
 }
 
-export function loadState(): State {
-  const file = stateFile();
+function loadStateFile(file: string): State | null {
   let raw: string;
   try {
     raw = readFileSync(file, "utf-8");
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") {
-      return emptyState();
+      return null;
     }
     // Returning empty state here would let the next save overwrite a file we
     // merely failed to read, so surface the problem instead.
@@ -89,6 +96,21 @@ export function loadState(): State {
     return emptyState();
   }
   return { session: normalizeSession(parsed.session), config: normalizeConfig(parsed.config) };
+}
+
+export function loadState(): State {
+  const file = stateFile();
+  const current = loadStateFile(file);
+  if (current !== null) return current;
+
+  const legacyFile = legacyStateFile();
+  if (legacyFile === file) return emptyState();
+  const legacy = loadStateFile(legacyFile);
+  if (legacy === null) return emptyState();
+
+  saveState(legacy);
+  console.error(`Migrated local state from ${legacyFile} to ${file}. The legacy file was preserved.`);
+  return legacy;
 }
 
 /**

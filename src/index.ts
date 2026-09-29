@@ -10,8 +10,8 @@ import { CliError } from "./lib/errors.js";
 const program = new Command();
 
 program
-  .name("claude-console")
-  .description("CLI for a Supabase-backed developer project registry")
+  .name("dcforge")
+  .description("DCForge project registry CLI for Supabase-backed developer workflows")
   .version("0.1.0");
 
 registerAuthCommands(program);

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Session } from "../../src/lib/local.js";
 
 // Deliberately different names from SUPABASE_URL/SUPABASE_ANON_KEY (which
-// the CLI itself reads) so that having those set for everyday `claude-console`
+// the CLI itself reads) so that having those set for everyday `dcforge`
 // use can never make this suite silently point at a real project.
 const REQUIRED_VARS = ["SUPABASE_INTEGRATION_URL", "SUPABASE_INTEGRATION_ANON_KEY"] as const;
 

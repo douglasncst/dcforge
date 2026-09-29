@@ -1,4 +1,4 @@
--- Schema for claude-console's `projects` command group.
+-- Schema for DCForge's `projects` command group.
 --
 -- Idempotent: safe to run more than once against the same database (a
 -- fresh project, a disposable project for test/integration/, or re-applying
@@ -7,7 +7,7 @@
 -- dropped first.
 --
 -- Run this in the Supabase SQL editor (or `supabase db execute`) before
--- using `claude-console projects ...`.
+-- using `dcforge projects ...`.
 
 create table if not exists public.projects (
   id text primary key,

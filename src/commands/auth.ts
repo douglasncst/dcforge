@@ -127,7 +127,7 @@ export function registerAuthCommands(program: Command): void {
     .action(() => {
       const state = loadState();
       if (!state.session) {
-        fail("not logged in. Run `claude-console auth login <email>`.");
+        fail("not logged in. Run `dcforge auth login <email>`.");
       }
       console.log(state.session.email);
     });

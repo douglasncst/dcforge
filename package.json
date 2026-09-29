@@ -1,5 +1,5 @@
 {
-  "name": "claude-console",
+  "name": "dcforge",
   "version": "0.1.0",
   "description": "Open-source TypeScript CLI for a Supabase-backed developer project registry.",
   "license": "Apache-2.0",
@@ -13,14 +13,16 @@
   "homepage": "https://github.com/douglasncst/dcforge#readme",
   "type": "module",
   "bin": {
-    "claude-console": "./dist/index.js"
+    "dcforge": "./dist/index.js"
   },
   "files": [
     "dist",
     "NOTICE"
   ],
   "keywords": [
+    "dcforge",
     "cli",
+    "developer-tools",
     "supabase",
     "typescript"
   ],

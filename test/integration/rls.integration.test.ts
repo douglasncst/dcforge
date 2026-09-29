@@ -34,10 +34,10 @@ function loginAs(user: TestUser): void {
 
 beforeEach(() => {
   home = mkdtempSync(join(tmpdir(), "dcforge-integration-"));
-  originalHome = process.env.CLAUDE_CONSOLE_HOME;
+  originalHome = process.env.DCFORGE_HOME;
   originalUrl = process.env.SUPABASE_URL;
   originalAnonKey = process.env.SUPABASE_ANON_KEY;
-  process.env.CLAUDE_CONSOLE_HOME = home;
+  process.env.DCFORGE_HOME = home;
   // src/lib/store.ts goes through src/lib/supabase.ts, which reads the
   // CLI's normal SUPABASE_URL/SUPABASE_ANON_KEY — funnel the disposable
   // project's credentials into them for the duration of each test only.
@@ -46,8 +46,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  if (originalHome === undefined) delete process.env.CLAUDE_CONSOLE_HOME;
-  else process.env.CLAUDE_CONSOLE_HOME = originalHome;
+  if (originalHome === undefined) delete process.env.DCFORGE_HOME;
+  else process.env.DCFORGE_HOME = originalHome;
   if (originalUrl === undefined) delete process.env.SUPABASE_URL;
   else process.env.SUPABASE_URL = originalUrl;
   if (originalAnonKey === undefined) delete process.env.SUPABASE_ANON_KEY;

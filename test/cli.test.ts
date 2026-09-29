@@ -13,7 +13,7 @@ let home: string;
 function run(args: string[], input = "") {
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    CLAUDE_CONSOLE_HOME: home,
+    DCFORGE_HOME: home,
     SUPABASE_URL: "http://127.0.0.1:9",
     SUPABASE_ANON_KEY: "test-anon-key",
   };
@@ -27,7 +27,7 @@ function run(args: string[], input = "") {
 }
 
 beforeEach(() => {
-  home = mkdtempSync(join(tmpdir(), "claude-console-cli-"));
+  home = mkdtempSync(join(tmpdir(), "dcforge-cli-"));
 });
 
 afterEach(() => {
@@ -187,7 +187,7 @@ describe("errors thrown from library code", () => {
   // error still reaches the user and the process with the right exit code
   // when it crosses an async commander action and the top-level handler.
   function runWithoutSupabaseConfig(args: string[]) {
-    const env: NodeJS.ProcessEnv = { ...process.env, CLAUDE_CONSOLE_HOME: home };
+    const env: NodeJS.ProcessEnv = { ...process.env, DCFORGE_HOME: home };
     delete env.SUPABASE_URL;
     delete env.SUPABASE_ANON_KEY;
     const result = spawnSync(process.execPath, ["--import", "tsx", entry, ...args], {

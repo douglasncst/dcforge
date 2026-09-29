@@ -41,7 +41,7 @@ function parseTimestampLine(line: string): { startMs: number; endMs: number } | 
 }
 
 /**
- * Covers what claude-console-style consumers actually need: cues with
+ * Covers what DCForge-style consumers actually need: cues with
  * plain text. NOTE/STYLE/REGION blocks and cue settings (position:, align:,
  * ...) are recognized and skipped/ignored, not interpreted — a VTT with
  * styling round-trips as plain text, which is documented as a phase-2 gap
