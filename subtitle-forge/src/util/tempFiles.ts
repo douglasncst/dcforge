@@ -1,6 +1,6 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir, homedir } from "node:os";
-import { join, resolve, sep } from "node:path";
+import { join, parse, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 
 const activeDirs = new Set<string>();
@@ -59,8 +59,8 @@ export function tempFilePath(dir: string, extension: string): string {
  */
 function assertRemovable(dir: string): void {
   const resolved = resolve(dir);
-  const guarded = [resolve(tmpdir()), resolve(homedir()), sep];
-  if (guarded.includes(resolved)) {
+  const guarded = [resolve(tmpdir()), resolve(homedir())];
+  if (guarded.includes(resolved) || parse(resolved).root === resolved) {
     throw new Error(`refusing to remove ${resolved}: not a directory this module created`);
   }
 }

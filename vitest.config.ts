@@ -7,6 +7,7 @@ import { defineConfig } from "vitest/config";
 // the ordinary test suite.
 export default defineConfig({
   test: {
+    include: ["test/**/*.test.ts"],
     exclude: ["**/node_modules/**", "**/dist/**", "test/integration/**"],
   },
 });
