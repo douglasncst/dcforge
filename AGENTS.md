@@ -17,23 +17,39 @@ working in this repository. Human contributors should read
 
 ## Validation
 
-- Use Node.js 22 or later and install dependencies with `npm ci`.
+- Use Node.js 22.12 or later and install dependencies with `npm ci`.
 - Before changing code, run the standard checks and report any pre-existing
   failures separately from failures you introduce:
 
   ```sh
-  npm run typecheck
+  npm run typecheck   # tsconfig.test.json: checks src/ AND test/
   npm test
   npm run build
   ```
 
 - After making changes, run all of them again plus any focused checks for the
-  code you touched. CI runs the same commands on Node 22 and 24.
+  code you touched. CI runs the same commands (plus `npm pack --dry-run`) on
+  Node 22 and 24.
 - Fix failures caused by your change. Never remove, skip or weaken tests to
   make the suite pass.
-- Tests must not need network access, real credentials or a real Supabase
-  project. Point `CLAUDE_CONSOLE_HOME` at a temporary directory; never read or
-  write the real `~/.claude-console`.
+- `npm test` must not need network access, real credentials or a real
+  Supabase project. Point `CLAUDE_CONSOLE_HOME` at a temporary directory;
+  never read or write the real `~/.claude-console`. The one exception is
+  `npm run test:integration` (`test/integration/`), which is opt-in, never
+  runs from `npm test` or CI, and requires
+  `SUPABASE_INTEGRATION_URL`/`SUPABASE_INTEGRATION_ANON_KEY` pointed at a
+  **disposable** project — see `test/integration/README.md`. Never point it,
+  or anything else, at a production or shared Supabase project.
+
+## Error handling
+
+- Library code (`src/lib/**`) throws — plain `Error` or `CliError` from
+  `src/lib/errors.ts` when a specific exit code matters — it never calls
+  `process.exit` itself. `src/lib/supabase.ts` is the reference example.
+- Command files (`src/commands/**`) and `src/index.ts`'s top-level
+  `.catch()` are the only places allowed to decide the process exits;
+  `src/lib/output.ts`'s `fail()` is a command-layer helper, not something to
+  call from `src/lib/**`.
 
 ## Security
 
@@ -41,10 +57,12 @@ working in this repository. Human contributors should read
   or real user data, including in tests, fixtures, logs and PR descriptions.
 - Never accept passwords or tokens as command-line arguments.
 - Only the Supabase anon key is used by the CLI; never introduce service-role
-  keys.
+  keys, in code, tests, or `test/integration/` env vars.
+- Never weaken a row-level security policy in `supabase/schema.sql` to make a
+  test pass.
 - Do not change credential-handling behavior (auth, `src/lib/local.ts`,
-  `src/lib/supabase.ts`) unless that is the explicitly requested task, and
-  update SECURITY.md when you do.
+  `src/lib/supabase.ts`, `src/lib/prompt.ts`) unless that is the explicitly
+  requested task, and update SECURITY.md when you do.
 
 ## Project layout
 
@@ -54,7 +72,13 @@ working in this repository. Human contributors should read
 - `src/lib/local.ts`: local state file (session tokens and config).
 - `src/lib/supabase.ts`: Supabase client and session restore/refresh.
 - `src/lib/store.ts`: project CRUD against the `projects` table.
-- `test/`: unit tests plus end-to-end CLI tests (`cli.test.ts`).
+- `src/lib/prompt.ts`: hidden password prompt and stdin reading.
+- `src/lib/errors.ts`: `CliError`, see Error handling above.
+- `supabase/schema.sql`: table and RLS policies; idempotent, safe to re-run.
+- `test/`: unit tests plus end-to-end CLI tests (`cli.test.ts`), run by
+  `npm test`.
+- `test/integration/`: opt-in Supabase RLS tests, run only by
+  `npm run test:integration`; see Validation above.
 
 ## Git and pull requests
 

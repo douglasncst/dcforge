@@ -32,3 +32,6 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      # Cheap sanity check that packaging metadata (files, bin, package.json)
+      # still produces a sane tarball; never actually publishes anything.
+      - run: npm pack --dry-run
