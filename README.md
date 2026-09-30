@@ -30,9 +30,13 @@ extracting, transcribing, translating, and validating video/audio subtitles
 with FFmpeg, whisper.cpp, and Ollama. It is an independent package with its
 own lockfile, tests, and CI workflow.
 
+### Last.fm exporter
+
+[`lastfm/`](lastfm/) is a separate CLI that exports a Last.fm user's most
+played tracks as CSV.
+
 ### Proposed
 
-- Last.fm exporter (#10) remains a separate proposal.
 - Health/MCP (#8) is not integrated: it requires a dedicated threat model,
   isolated storage, deletion lifecycle, and security review.
 
